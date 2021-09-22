@@ -1,3 +1,8 @@
+<?php
+    //Incluimos archivo de conexion a la base de datos
+    require("conectar.php");
+?>
+
 <!doctype html>
 <html lang="es">
 <head>
@@ -6,7 +11,7 @@
     <title>COMBOS DEPENDIENTES CON BASE DE DATOS. De Haberlo sabido antes - Ejemplo</title>
 
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-    <meta name="description" content="Este ejemplo muestra como funcionan dos selectores combinados. Segun el valor que selecciones en la primera lista, se completa la segunda lista con valores relacionados"/>
+    <meta name="description" content="Este ejemplo muestra como funcionan dos selectores combinados. Segun el valor que selecciones en la primera lista, se completa la segunda lista con valores relacionados usando los campos traidos de una base de datos. A su vez, completa un campo texto con otro valor relacionado"/>
     <meta name="author" content="Federico Perichon" />
     <meta name="copyright" content="federicoperichon.com.ar" />
 
@@ -28,9 +33,24 @@
                 <label for="pais">Paises:</label>
                 <select name="pais" id="pais" class="form-select" required>
                     <option value="">Seleccione...</option>
-                    <option value="1">Argentina</option>
-                    <option value="2">España</option>
-                    <option value="3">Mexico</option>
+                    
+                    <?php 
+                        $sql="SELECT * FROM paises ORDER BY descripcion";
+                        if (!$resultado = $conexion->query($sql)) {
+                            echo "Error: La ejecución de la consulta falló: \n";
+                            echo "Errno: " . $conexion->errno . "\n";
+                            echo "Error: " . $conexion->error . "\n";
+                            exit;
+                        }
+
+                        while($linea = $resultado->fetch_assoc())
+                        {
+                            echo"
+                            <option value=$linea[id_pais]>$linea[descripcion]</option>";
+                        }
+                        $resultado->free();
+                    ?>
+
                 </select>
             </div>
             <div class="mb-3">
@@ -38,32 +58,37 @@
                 <select name="ciudad" id="ciudad" class="form-select"></select>
             </div>
             <div class="mb-3">
-                <label for="moneda">Moneda:</label>
-                <input type="text" name="moneda" id="moneda" class="form-control">
             </div>
+
+            <div class="mb-3">
+                <label for='moneda'>Moneda:</label>
+                <div id=moneda></div>
+            </div>
+
         </div>
 
         <div class='mb-3'>
-            <input type='submit' class='btn btn-success' value='Enviar'>                      
+            <input type='submit' class='btn btn-success' value='Enviar'>
         </div>
     </form>
 </div>
 
 <!--
-Llamada al evento Change del selector Países
-Se dispara cada vez que seleccionamos un Pais de la lista
-Llama al archivo buscarciudades.php y le pasa el id del pais seleccionado
-Recibe la lista de ciudades y las muestra en el combo "ciudad"
+    Llamada al evento Change del selector Países
+    Se dispara cada vez que seleccionamos un Pais de la lista
+    Llama al archivo buscarciudades.php y le pasa el id del pais seleccionado
+    Recibe la lista de ciudades y las muestra en el combo "ciudad"
+    Recibe el nombre de la moneda y lo muestra en el id "moneda"
 -->
 <script language="javascript">
 $(document).ready(function(){
     $("#pais").on('change', function () {
         $("#pais option:selected").each(function () {
             paiselegido=$(this).val();
-            $.post("buscarciudades.php", { paiselegido: paiselegido }, function(data){
+            $.post("buscar_ciudades.php", { paiselegido: paiselegido }, function(data){
                 $("#ciudad").html(data);
             });
-            $.post("buscarmoneda.php", { paiselegido: paiselegido }, function(data){
+            $.post("buscar_moneda.php", { paiselegido: paiselegido }, function(data){
                 $("#moneda").html(data);
             });
         });
@@ -71,135 +96,5 @@ $(document).ready(function(){
 });
 </script>
 
-<?php
-
-// AGREGAR UN MOVIMIENTO ---------------------------------------
-        echo "
-        <div class='row'>
-        <div class='col-md-4'>
-            <div class='box box-primary'>
-                
-                <!-- form start -->
-                <form role='form' method='post' action=''>
-                    <div class='box-body'>
-                        <div class='form-group has-feedback'>
-                            <label for='altaproyecto'>Proyecto</label>
-                            <select name='altaproyecto' id='altaproyecto' class='mi-selector form-control'  required>
-                                <option value=''>Buscar ...</option>";
-                            $s="SELECT * FROM proyectos WHERE estado = 'A' ORDER BY nombre";
-                                if (!$r = $conexion->query($s)) {
-                                    echo "Error: La ejecución de la consulta falló debido a: \n";
-                                    echo "Query: " . $s . "\n";
-                                    echo "Errno: " . $conexion->errno . "\n";
-                                    echo "Error: " . $conexion->error . "\n";
-                                    exit;
-                                }
-
-                                while($l = $r->fetch_assoc())
-                                {
-                                    echo"
-                                    <option value=$l[id_proyecto]>$l[nombre] - $l[descripcion]</option>";
-
-                                }
-                                $r->free();
-                            echo"
-                            </select>
-                        </div>
-                        <div class='form-group has-feedback'>
-                            <label for='altaplano'>Plano</label>
-                            <select name='altaplano' id='altaplano' class='form-control' required></select>
-                        </div>
-
-                        <div class='form-group has-feedback'>
-                            <label for='altacliente'>Cliente:</label>
-                            <div id=altacliente></div>
-                        </div>
-
-
-                        <div class='form-group has-feedback'>
-                            <label for='cuadrilla'>Cuadrilla</label>
-                            <select name='cuadrilla' id='cuadrilla' size='1' class='form-control' required>
-                                <option value=''>Buscar ...</option>";
-                            $s="SELECT * FROM cuadrillas WHERE estado = 'A' ORDER BY descripcion";
-                                if (!$r = $conexion->query($s)) {
-                                    echo "Error: La ejecución de la consulta falló debido a: \n";
-                                    echo "Query: " . $s . "\n";
-                                    echo "Errno: " . $conexion->errno . "\n";
-                                    echo "Error: " . $conexion->error . "\n";
-                                    exit;
-                                }
-
-                                while($l = $r->fetch_assoc())
-                                {
-                                    echo"
-                                    <option value=$l[id_cuadrilla]>$l[descripcion]</option>";
-
-                                }
-                                $r->free();
-                            echo"
-                            </select>
-                        </div>
-                        <div class='form-group has-feedback'>
-                            <label for='tipo'>Tipo Movto.</label>
-                            <select name='tipo' id='tipo' size='1' class='form-control'>
-                                <option value=''>Buscar...</option>";
-                                $s = "SELECT * FROM tipo_movimiento ORDER BY descripcion";
-                                if (!$r = $conexion->query($s)) {
-                                    echo "Error: La ejecución de la consulta falló debido a: \n";
-                                    echo "Query: " . $s . "\n";
-                                    echo "Errno: " . $conexion->errno . "\n";
-                                    echo "Error: " . $conexion->error . "\n";
-                                    exit;
-                                }
-                                while($l = $r->fetch_assoc()) {
-                                    echo"
-                                    <option value=$l[id_tipmov]>$l[descripcion]</option>";
-                                }
-                                $r->free();
-                            echo"
-                            </select>
-                        </div>
-
-                        <div class='form-group'>
-                            <label for='buscacodigo'>Buscar Codigo de Producto:</label>
-                            <input type='text' class='form-control' id='buscacodigo' name='buscacodigo' required>
-                        </div>
-
-                        <div class='form-group'>
-                            <label for='verproducto'>Descripción: </label>
-                            <div id=verproducto></div>
-                        </div>
-
-                        <div class='form-group'>
-                            <label>Fecha de Movimiento:</label>
-                            <div class='input-group'>
-                                <div class='input-group-addon'>
-                                    <i class='fa fa-calendar'></i>
-                                </div>
-                                <input type='text' name='fecha' class='form-control' data-mask='00/00/0000' placeholder='__/__/____' value=$hoy required/>
-                            </div>
-                        </div>
-                        <div class='form-group has-feedback'>
-                            <label for='cantidad1'>Cantidad:</label>
-                            <input type='number' class='form-control' id='cantidad' name='cantidad' required>
-                            <span id='cantlInfo'></span>
-                        </div>
-                        <div class='form-group has-feedback'>
-                            <label for='observaciones'>Observaciones</label>
-                            <input type='text' class='form-control' id='observaciones' name='observaciones'>
-                        </div>
-                        <div class='box-footer'>
-                            <button type='submit' name='Submit' class='btn btn-success'>Agregar</button>
-                            <a title='Cancelar y Volver' href='$pag' class='btn btn-default '>Cancelar y Volver</a>
-                        </div>
-                    </form>
-                </div>
-            <div>
-            <div>
-        ";
-
-?>
-
 </body>
-
 </html>

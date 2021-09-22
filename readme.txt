@@ -1,0 +1,1 @@
+Este ejemplo muestra como funcionan dos selectores combinados. Según el valor que selecciones en la primera lista, se completa la segunda lista con valores relacionados, usando los campos leídos de una base de datos. Además, completa un campo texto con otro valor relacionado
